@@ -3,53 +3,35 @@
 #include <ctime>
 #include <cstdlib>
 #include <random>
-#include <bits/stdc++.h>
 #include "raylib.h"
+#include <bits/stdc++.h>
 
 static const int screenWidth = 600;
 static const int screenHeight = 800;
 static const float scrollingSpeed = 2.0f;
 static const int maxLives = 3;
-static const int maxEnemy = 10;
-static int enemyCount = 0;
+static const int maxEnemies = 10;
 
-// Function to generate random integer in range
-int getRandomIntInclusive(int min, int max)
-{
-    std::random_device rd;
-    std::mt19937 generator(rd());
-    std::uniform_int_distribution<int> distribution(min, max);
-    return distribution(generator);
+// Function to generate a random float in a specified range
+float GetRandomFloat(float min, float max) {
+    return min + static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (max - min);
 }
 
-// Function to generate random float in range
-float getRandomFloatInRange(float min, float max)
-{
-    std::random_device rd;
-    std::mt19937 generator(rd());
-    std::uniform_real_distribution<float> distribution(min, max);
-    return distribution(generator);
-}
-
-class Background
-{
+class Background {
 private:
     Texture2D background;
     float scrollingBack;
 
 public:
-    Background()
-    {
+    Background() {
         background = LoadTexture("assets/background.png");
         scrollingBack = 0.0f;
     }
 
-    void Draw()
-    {
+    void Draw() {
         scrollingBack += scrollingSpeed;
 
-        if (scrollingBack >= background.height)
-        {
+        if (scrollingBack >= background.height) {
             scrollingBack = 0;
         }
 
@@ -57,14 +39,12 @@ public:
         DrawTextureEx(background, (Vector2){0, scrollingBack - background.height}, 0.0f, 1.0f, WHITE);
     }
 
-    ~Background()
-    {
+    ~Background() {
         UnloadTexture(background);
     }
 };
 
-class Player
-{
+class Player {
 private:
     float initialX;
     float initialY;
@@ -74,8 +54,7 @@ public:
     int lives;
     Texture2D playerimg;
 
-    Player()
-    {
+    Player() {
         playerimg = LoadTexture("assets/spaceship.png");
         initialX = screenWidth / 2;
         initialY = screenHeight - playerimg.height - 150;
@@ -83,90 +62,72 @@ public:
         lives = maxLives;
     }
 
-    void Draw()
-    {
-        if (IsKeyDown(KEY_RIGHT))
-            initialX += speedX;
-        if (IsKeyDown(KEY_LEFT))
-            initialX -= speedX;
+    void Draw() {
+        if (IsKeyDown(KEY_RIGHT)) initialX += speedX;
+        if (IsKeyDown(KEY_LEFT)) initialX -= speedX;
 
-        if (initialX <= 0)
-            initialX = 0;
-        if (initialX + playerimg.width >= screenWidth)
-            initialX = screenWidth - playerimg.width;
+        if (initialX <= 0) initialX = 0;
+        if (initialX + playerimg.width >= screenWidth) initialX = screenWidth - playerimg.width;
 
         DrawTextureEx(playerimg, (Vector2){initialX, initialY}, 0.0f, 1.0f, WHITE);
     }
 
-    float GetX() const
-    {
+    float GetX() const {
         return initialX;
     }
 
-    float GetY() const
-    {
+    float GetY() const {
         return initialY;
     }
 
-    void LoseLife()
-    {
+    void LoseLife() {
         lives--;
     }
 
-    bool IsAlive() const
-    {
+    bool IsAlive() const {
         return lives > 0;
     }
 
-    void Reset()
-    {
+    void Reset() {
         initialX = screenWidth / 2;
         initialY = screenHeight - playerimg.height - 150;
         lives = maxLives;
     }
 
-    ~Player()
-    {
+    ~Player() {
         UnloadTexture(playerimg);
     }
 };
 
-class Bullet
-{
+class Bullet {
 public:
     Vector2 position;
     float speed;
     bool active;
 
-    Bullet(float x, float y, float bulletSpeed)
-    {
+    Bullet(float x, float y, float bulletSpeed) {
         position.x = x;
         position.y = y;
         speed = bulletSpeed;
         active = true;
     }
 
-    void Update()
-    {
+    void Update() {
         position.y -= speed;
 
-        if (position.y < 0)
-        {
+        if (position.y < 0) {
             active = false;
         }
     }
 
-    void Draw()
-    {
-        if (active)
-        {
+    void Draw() {
+        if (active) {
             DrawRectangle(static_cast<int>(position.x), static_cast<int>(position.y), 5, 10, RED);
         }
     }
 };
 
-class EnemyShip
-{
+class EnemyShip {
 private:
     Vector2 position;
     float speedY;
@@ -176,9 +137,8 @@ private:
 public:
     Texture2D enemyTexture;
 
-    EnemyShip(std::string texturePath, float x, float y, float enemySpeed)
-    {
-        enemyTexture = LoadTexture(texturePath.c_str());
+    EnemyShip(const char* texturePath, float x, float y, float enemySpeed) {
+        enemyTexture = LoadTexture(texturePath);
         position.x = x;
         position.y = y;
         speedY = enemySpeed;
@@ -186,47 +146,37 @@ public:
         lives = 1;
     }
 
-    void Update()
-    {
+    void Update() {
         position.y += speedY;
 
-        // Check if the enemy ship is out of the screen
-        if (position.y > screenHeight)
-        {
+        if (position.y > screenHeight) {
             active = false;
         }
     }
 
-    void Draw()
-    {
-        if (active)
-        {
+    void Draw() {
+        if (active) {
             DrawTextureEx(enemyTexture, position, 0.0f, 1.0f, WHITE);
         }
     }
 
-    bool IsActive() const
-    {
+    bool IsActive() const {
         return active;
     }
 
-    Vector2 GetPosition() const
-    {
+    Vector2 GetPosition() const {
         return position;
     }
 
-    void LoseLife()
-    {
+    void LoseLife() {
         lives--;
-        if (lives <= 0)
-        {
+        if (lives <= 0) {
             active = false;
         }
     }
 };
 
-class Game
-{
+class Game {
 public:
     Player player = Player();
     bool running = true;
@@ -237,40 +187,22 @@ public:
     double lastEnemyShootTime = 0.0;
     double enemyShootInterval = 1.5; // Adjust this value for enemy shooting rate
 
-    Game()
-    {
-        // Initialize Raylib
-        InitWindow(screenWidth, screenHeight, "Space Invaders");
-        SetTargetFPS(60);
-
-        // Load background and player textures
-        Background bg = Background();
-        Player player = Player();
-
-        // Initialize random seed
-        std::srand(static_cast<unsigned int>(std::time(nullptr)));
-
-        // Load enemy ship textures
-        LoadEnemyTextures();
+    Game() {
     }
 
-    ~Game()
-    {
+    ~Game() {
     }
 
-    void Draw()
-    {
+    void Draw() {
         player.Draw();
 
         // Draw player bullets
-        for (auto &bullet : playerBullets)
-        {
+        for (auto& bullet : playerBullets) {
             bullet.Draw();
         }
 
         // Draw enemies
-        for (auto &enemy : enemies)
-        {
+        for (auto& enemy : enemies) {
             enemy.Draw();
         }
 
@@ -278,54 +210,46 @@ public:
         DrawText(("Lives: " + std::to_string(player.lives)).c_str(), 10, 10, 20, WHITE);
     }
 
-    void Update()
-    {
-        if (running)
-        {
+    void Update() {
+        if (running) {
             player.Draw();
 
             // Update player bullets
-            for (auto &bullet : playerBullets)
-            {
+            for (auto& bullet : playerBullets) {
                 bullet.Update();
             }
 
             // Update enemies
-            for (auto &enemy : enemies)
-            {
+            for (auto& enemy : enemies) {
                 enemy.Update();
 
                 // Check if enemy collides with player
-                if (CheckCollisionCircles(enemy.GetPosition(), 16, (Vector2){player.GetX() + player.playerimg.width / 2, player.GetY() + player.playerimg.height / 2}, 20) && player.IsAlive())
-                {
+                if (CheckCollisionCircles(enemy.GetPosition(), 16, (Vector2){player.GetX() + player.playerimg.width / 2, player.GetY() + player.playerimg.height / 2}, 20) && player.IsAlive()) {
                     player.LoseLife();
                     enemy.LoseLife();
                 }
             }
 
             // Remove inactive bullets from the vector
-            playerBullets.erase(std::remove_if(playerBullets.begin(), playerBullets.end(), [](const Bullet &bullet)
-                                               { return !bullet.active; }),
-                                playerBullets.end());
+            playerBullets.erase(std::remove_if(playerBullets.begin(), playerBullets.end(), [](const Bullet& bullet) {
+                return !bullet.active;
+            }), playerBullets.end());
 
             // Remove inactive enemies from the vector
-            enemies.erase(std::remove_if(enemies.begin(), enemies.end(), [](const EnemyShip &enemy)
-                                         { return !enemy.IsActive(); }),
-                          enemies.end());
+            enemies.erase(std::remove_if(enemies.begin(), enemies.end(), [](const EnemyShip& enemy) {
+                return !enemy.IsActive();
+            }), enemies.end());
 
             // Spawn new enemies at regular intervals
             double currentTime = GetTime();
-            if (currentTime - lastEnemySpawnTime >= enemySpawnInterval)
-            {
+            if (currentTime - lastEnemySpawnTime >= enemySpawnInterval) {
                 SpawnEnemy();
                 lastEnemySpawnTime = currentTime;
             }
 
             // Enemy shooting logic
-            for (auto &enemy : enemies)
-            {
-                if (currentTime - lastEnemyShootTime >= enemyShootInterval)
-                {
+            for (auto& enemy : enemies) {
+                if (currentTime - lastEnemyShootTime >= enemyShootInterval) {
                     ShootEnemyBullet(enemy);
                     lastEnemyShootTime = currentTime;
                 }
@@ -333,46 +257,29 @@ public:
         }
 
         // Game over logic
-        if (!player.IsAlive())
-        {
+        if (!player.IsAlive()) {
             running = false;
         }
 
         // Check bullet-enemy collisions
         CheckBulletEnemyCollisions();
+        // Call SpawnEnemy here to create new enemies
+        SpawnEnemy();
     }
 
-    void LoadEnemyTextures()
-    {
-        // Load enemy ship textures and store them in the vector
-        const char* enemyTextures[] = {"assets/enemy1.png", "assets/enemy2.png", "assets/enemy3.png", "assets/enemy4.png"};
-        const int numEnemyTextures = sizeof(enemyTextures) / sizeof(enemyTextures[0]);
-
-        for (int i = 0; i < numEnemyTextures; i++)
-        {
-            Texture2D enemyTexture = LoadTexture(enemyTextures[i]);
-            enemyTexturesVector.push_back(enemyTexture);
-        }
-    }
-
-    void SpawnEnemy()
-    {
-        if (enemyCount < maxEnemy)
-        {
+    void SpawnEnemy() {
+        if (enemies.size() < maxEnemies) {
             // Randomly choose an enemy ship texture
-            std::vector<std::string> enemyTextures = {"assets/enemy1.png", "assets/enemy2.png", "assets/enemy3.png", "assets/enemy4.png"};
-            const int numEnemyTextures = enemyTextures.size();
-            int randomTextureIndex = getRandomIntInclusive(0, numEnemyTextures - 1);
+            const char* enemyTextures[] = {"assets/enemy1.png", "assets/enemy2.png", "assets/enemy3.png", "assets/enemy4.png"};
+            const int numEnemyTextures = sizeof(enemyTextures) / sizeof(enemyTextures[0]);
+            int randomTextureIndex = rand() % numEnemyTextures;
 
-            float randomX = getRandomFloatInRange(0, screenWidth - 50);
-            float randomY = getRandomFloatInRange(-200, screenHeight / 7);
-            enemies.push_back(EnemyShip(enemyTextures[randomTextureIndex], randomX, randomY, 1.0f));
-            enemyCount++;
+            float randomX = static_cast<float>(rand() % (screenWidth - 50));
+            enemies.push_back(EnemyShip(enemyTextures[randomTextureIndex], randomX, -50, 1.0f));
         }
     }
 
-    void ShootEnemyBullet(const EnemyShip &enemy)
-    {
+    void ShootEnemyBullet(const EnemyShip& enemy) {
         float enemyX = enemy.GetPosition().x + enemy.enemyTexture.width / 2;
         float enemyY = enemy.GetPosition().y + enemy.enemyTexture.height / 2;
         float bulletSpeed = 5.0f;
@@ -380,18 +287,13 @@ public:
     }
 
     // Add a function to check bullet-enemy collisions
-    void CheckBulletEnemyCollisions()
-    {
-        for (auto &bullet : playerBullets)
-        {
-            if (bullet.active)
-            {
-                for (auto &enemy : enemies)
-                {
+    void CheckBulletEnemyCollisions() {
+        for (auto& bullet : playerBullets) {
+            if (bullet.active) {
+                for (auto& enemy : enemies) {
                     if (enemy.IsActive() && CheckCollisionRecs(
-                                                {(float)bullet.position.x, (float)bullet.position.y, 5, 10},
-                                                {(float)enemy.GetPosition().x, (float)enemy.GetPosition().y, (float)enemy.enemyTexture.width, (float)enemy.enemyTexture.height}))
-                    {
+                        {(float)bullet.position.x, (float)bullet.position.y, 5, 10},
+                        {(float)enemy.GetPosition().x, (float)enemy.GetPosition().y, enemy.enemyTexture.width, enemy.enemyTexture.height})) {
                         bullet.active = false;
                         enemy.LoseLife();
                     }
@@ -401,8 +303,7 @@ public:
     }
 };
 
-int main()
-{
+int main() {
     std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
     std::cout << "Starting the game..." << std::endl;
@@ -412,13 +313,11 @@ int main()
     Background bg = Background();
     Game game = Game();
 
-    while (!WindowShouldClose())
-    {
+    while (!WindowShouldClose()) {
         game.Update();
 
         // Player shooting logic
-        if (game.running && IsKeyPressed(KEY_SPACE))
-        {
+        if (game.running && IsKeyPressed(KEY_SPACE)) {
             float playerX = game.player.GetX() + game.player.playerimg.width / 2;
             float playerY = game.player.GetY();
             float bulletSpeed = 5.0f;
@@ -431,8 +330,7 @@ int main()
         game.Draw();
 
         // Game over screen
-        if (!game.running)
-        {
+        if (!game.running) {
             DrawText("Game Over", screenWidth / 2 - MeasureText("Game Over", 40) / 2, screenHeight / 2 - 40, 40, RED);
             DrawText(("Your Score: " + std::to_string(maxLives - game.player.lives)).c_str(), screenWidth / 2 - MeasureText(("Your Score: " + std::to_string(maxLives - game.player.lives)).c_str(), 20) / 2, screenHeight / 2 + 10, 20, WHITE);
             DrawText("Press R to Restart", screenWidth / 2 - MeasureText("Press R to Restart", 20) / 2, screenHeight / 2 + 40, 20, GREEN);
@@ -441,8 +339,7 @@ int main()
         EndDrawing();
 
         // Restart the game when 'R' is pressed
-        if (!game.running && IsKeyPressed(KEY_R))
-        {
+        if (!game.running && IsKeyPressed(KEY_R)) {
             game = Game(); // Reset the game
         }
     }
